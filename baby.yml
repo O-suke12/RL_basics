@@ -6,6 +6,7 @@ dependencies:
   - absl-py=2.0.0=pyhd8ed1ab_0
   - aiohttp=3.8.6=py310hb372a2b_1
   - aiosignal=1.3.1=pyhd8ed1ab_0
+  - aom=3.6.1=he965462_0
   - appdirs=1.4.4=pyh9f0ad1d_0
   - appnope=0.1.3=pyhd8ed1ab_0
   - asttokens=2.4.0=pyhd8ed1ab_0
@@ -41,6 +42,7 @@ dependencies:
   - cssselect2=0.2.1=pyh9f0ad1d_1
   - curl=8.4.0=h726d00d_0
   - cycler=0.12.0=pyhd8ed1ab_0
+  - dav1d=1.2.1=h0dc2134_0
   - debugpy=1.8.0=py310h9e9d8ca_1
   - decorator=5.1.1=pyhd8ed1ab_0
   - delly=0.8.7=h6d7b568_1
@@ -50,7 +52,9 @@ dependencies:
   - executing=1.2.0=pyhd8ed1ab_0
   - expat=2.5.0=hf0c8a7f_1
   - farama-notifications=0.0.4=pyhd8ed1ab_0
+  - ffmpeg=4.3.2=hbf27d7b_3
   - filelock=3.12.4=pyhd8ed1ab_0
+  - fluidsynth=2.3.4=h8802ce7_0
   - font-ttf-dejavu-sans-mono=2.37=hab24e00_0
   - font-ttf-inconsolata=3.000=h77eed37_0
   - font-ttf-source-code-pro=2.038=h77eed37_0
@@ -72,6 +76,7 @@ dependencies:
   - glib-tools=2.78.0=h7d26f99_0
   - gmp=6.2.1=h2e338ed_0
   - gmpy2=2.1.2=py310hb691cb2_1
+  - gnutls=3.6.13=h756fd2b_1
   - google-auth=2.23.3=pyhca7485f_0
   - google-auth-oauthlib=1.0.0=pyhd8ed1ab_1
   - graphite2=1.3.13=h2e338ed_1001
@@ -85,6 +90,8 @@ dependencies:
   - htslib=1.18=h365c357_0
   - icu=70.1=h96cf925_0
   - idna=3.4=pyhd8ed1ab_0
+  - imageio=2.31.5=pyh8c1a49c_0
+  - imageio-ffmpeg=0.4.9=pyhd8ed1ab_0
   - importlib-metadata=6.8.0=pyha770c72_0
   - importlib_metadata=6.8.0=hd8ed1ab_0
   - ipykernel=6.25.2=pyh1050b4e_0
@@ -99,9 +106,11 @@ dependencies:
   - k8=0.2.5=hdf58011_4
   - kiwisolver=1.4.5=py310h88cfcbd_1
   - krb5=1.21.2=hb884880_0
+  - lame=3.100=hb7f2c08_1003
   - lcms2=2.15=hd6ba6f3_3
   - lerc=4.0.0=hb486fe8_0
   - libabseil=20230802.1=cxx17_h048a20a_0
+  - libavif16=1.0.1=h4fa63ff_2
   - libblas=3.9.0=18_osx64_openblas
   - libbrotlicommon=1.1.0=h0dc2134_1
   - libbrotlidec=1.1.0=h0dc2134_1
@@ -114,6 +123,7 @@ dependencies:
   - libev=4.33=haf1e3a3_1
   - libexpat=2.5.0=hf0c8a7f_1
   - libffi=3.4.2=h0d85af4_5
+  - libflac=1.4.3=he965462_0
   - libgfortran=5.0.0=13_2_0_h97931a8_1
   - libgfortran5=13.2.0=h2873a65_1
   - libglib=2.78.0=hc62aa5d_0
@@ -121,15 +131,20 @@ dependencies:
   - libiconv=1.17=hac89ed1_0
   - libjpeg-turbo=3.0.0=h0dc2134_1
   - liblapack=3.9.0=18_osx64_openblas
+  - libmad=0.15.1b=hb7f2c08_1001
   - libnghttp2=1.52.0=he2ab024_0
+  - libogg=1.3.4=h35c211d_1
   - libopenblas=0.3.24=openmp_h48a4ad5_0
+  - libopus=1.3.1=hc929b4f_1
   - libpng=1.6.39=ha978bb4_0
   - libprotobuf=4.24.3=he0c2237_0
+  - libsndfile=1.2.2=h9603cec_1
   - libsodium=1.0.18=hbcb3906_1
   - libsqlite=3.43.0=h58db7d2_0
   - libssh2=1.11.0=hd019ec5_0
   - libtiff=4.6.0=h684deea_2
   - libuv=1.46.0=h0c2f820_0
+  - libvorbis=1.3.7=h046ec9c_0
   - libwebp-base=1.3.2=h0dc2134_0
   - libxcb=1.15=hb7f2c08_0
   - libzlib=1.2.13=h8a1eda9_5
@@ -142,8 +157,10 @@ dependencies:
   - matplotlib-inline=0.1.6=pyhd8ed1ab_0
   - minimap2=2.26=h45fc8d7_2
   - mkl=2022.2.1=h44ed08c_16952
+  - moviepy=1.0.3=pyhd8ed1ab_1
   - mpc=1.3.1=h81bd1dd_0
   - mpfr=4.2.0=h4f9bd69_0
+  - mpg123=1.32.3=he965462_0
   - mpmath=1.3.0=pyhd8ed1ab_0
   - multidict=6.0.4=py310h90acd4f_1
   - munkres=1.1.4=pyh9f0ad1d_0
@@ -151,12 +168,15 @@ dependencies:
   - mypy_extensions=1.0.0=pyha770c72_0
   - ncurses=6.4=hf0c8a7f_0
   - nest-asyncio=1.5.8=pyhd8ed1ab_0
+  - nettle=3.6=hedd7734_0
   - networkx=3.1=pyhd8ed1ab_0
   - numpy=1.26.0=py310h0171094_0
   - oauthlib=3.2.2=pyhd8ed1ab_0
+  - openh264=2.1.1=hfd3ada9_0
   - openjdk=17.0.8=h837b0c1_3
   - openjpeg=2.5.0=ha4da562_3
   - openssl=3.1.3=h8a1eda9_0
+  - opusfile=0.12=h9cee658_2
   - packaging=23.2=pyhd8ed1ab_0
   - pango=1.50.14=hbd9bf65_0
   - parallel=20160622=1
@@ -172,6 +192,9 @@ dependencies:
   - pip=23.2.1=pyhd8ed1ab_0
   - pixman=0.42.2=he965462_0
   - platformdirs=3.11.0=pyhd8ed1ab_0
+  - portaudio=19.6.0=he965462_9
+  - portmidi=2.0.4=he5995f1_2
+  - proglog=0.1.9=py_0
   - prompt-toolkit=3.0.39=pyha770c72_0
   - prompt_toolkit=3.0.39=hd8ed1ab_0
   - protobuf=4.24.3=py310h9d7d3b5_1
@@ -183,6 +206,7 @@ dependencies:
   - pyasn1-modules=0.3.0=pyhd8ed1ab_0
   - pycparser=2.21=pyhd8ed1ab_0
   - pydyf=0.8.0=pyhd8ed1ab_0
+  - pygame=2.5.2=py310h2ee45d5_1
   - pygments=2.16.1=pyhd8ed1ab_0
   - pyjwt=2.8.0=pyhd8ed1ab_0
   - pyopenssl=23.2.0=pyhd8ed1ab_1
@@ -196,6 +220,7 @@ dependencies:
   - pyu2f=0.1.5=pyhd8ed1ab_0
   - pyyaml=6.0.1=py310h6729b98_1
   - pyzmq=25.1.1=py310h998be00_1
+  - rav1e=0.6.6=h7205ca4_2
   - re2=2023.03.02=h096449b_0
   - readline=8.2=h9e318b2_1
   - requests=2.31.0=pyhd8ed1ab_0
@@ -206,6 +231,10 @@ dependencies:
   - samtools=1.18=hd510865_1
   - scikit-learn=1.3.1=py310h04b1a37_1
   - scipy=1.11.3=py310h2db466d_1
+  - sdl2=2.28.4=he965462_0
+  - sdl2_image=2.6.3=hc003a97_4
+  - sdl2_mixer=2.6.3=h4858b17_1
+  - sdl2_ttf=2.20.2=h7bafa26_0
   - sentry-sdk=1.32.0=pyhd8ed1ab_0
   - setproctitle=1.3.3=py310h6729b98_0
   - setuptools=68.2.2=pyhd8ed1ab_0
@@ -214,6 +243,7 @@ dependencies:
   - smmap=3.0.5=pyh44b312d_0
   - snpeff=5.0=hdfd78af_1
   - stack_data=0.6.2=pyhd8ed1ab_0
+  - svt-av1=1.7.0=he965462_0
   - sympy=1.12=pypyh9d50eac_103
   - tabixpp=1.1.2=hdc9e95e_1
   - tb-profiler=4.1.1=pypyh5e36f6f_1
@@ -241,6 +271,7 @@ dependencies:
   - werkzeug=3.0.0=pyhd8ed1ab_0
   - wfa2-lib=2.3.4=h85dcccf_0
   - wheel=0.41.2=pyhd8ed1ab_0
+  - x264=1!161.3030=h0d85af4_1
   - xorg-libxau=1.0.11=h0dc2134_0
   - xorg-libxdmcp=1.1.3=h35c211d_0
   - xz=5.2.6=h775f41a_0
