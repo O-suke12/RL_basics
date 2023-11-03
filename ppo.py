@@ -33,7 +33,7 @@ def parse_args():
         help="if toggled, cuda will be enabled by default",
     )
     parser.add_argument("--seed", type=int, default=1)
-    parser.add_argument("--num-episodes", type=int, default=4000, help="the number of episodes to run")
+    parser.add_argument("--num-episodes", type=int, default=500, help="the number of episodes to run")
     parser.add_argument(
         "--num-steps", type=int, default=128, help="the number of steps to run in each environment per policy rollout"
     )
@@ -41,7 +41,24 @@ def parse_args():
     parser.add_argument("--num-updates", type=int, default=4, help="the number of update in each episode")
     parser.add_argument("--clip", type=float, default=0.2, help="the surrogate clipping coefficient")
     parser.add_argument(
-        "--render", type=lambda x: bool(strtobool(x)), default=False, help="if toggled, render the environment"
+        "--wandb-project-name", type=str, default="ppo-implementation-details", help="the wandb's project name"
+    )
+    parser.add_argument("--wandb-entity", type=str, default=None, help="the entity (team) of wandb's project")
+    parser.add_argument(
+        "--track",
+        type=lambda x: bool(strtobool(x)),
+        default=False,
+        nargs="?",
+        const=True,
+        help="if toggled, this experiment will be tracked with Weights and Biases",
+    )
+    parser.add_argument(
+        "--render",
+        type=lambda x: bool(strtobool(x)),
+        default=False,
+        nargs="?",
+        const=True,
+        help="if toggled, render the environment",
     )
     parser.add_argument("--num-minibatches", type=int, default=6)
     args = parser.parse_args()
@@ -86,7 +103,7 @@ class Agent(nn.Module):
     def evaluate(self, obs, acts):
         logits = self.actor(obs)
         probs = Categorical(logits=logits)
-        return self.critic(obs).squeeze(), probs.log_prob(acts),  probs.entropy()
+        return self.critic(obs).squeeze(), probs.log_prob(acts), probs.entropy()
 
 
 class PPO:
@@ -110,7 +127,7 @@ class PPO:
             obs.append(observation)
             action, log_prob = agent.get_action_and_prob(observation)
             observation, reward, done, truncated, info = env.step(action)
-            acts.append(action) 
+            acts.append(action)
             log_probs.append(log_prob)
             ep_rews.append(reward)
             if done:
@@ -119,7 +136,7 @@ class PPO:
         log_probs = torch.FloatTensor(log_probs)
         obs = torch.FloatTensor(obs)
         acts = torch.FloatTensor(np.array(acts))
-        rtgs = torch.FloatTensor(self.to_go(ep_rews)) 
+        rtgs = torch.FloatTensor(self.to_go(ep_rews))
         return (
             obs,
             acts,
@@ -143,9 +160,9 @@ class PPO:
         return advantages
 
     def train(self):
-        total_upd = args.num_episodes*args.num_updates
+        total_upd = args.num_episodes * args.num_updates
         for epi in range(args.num_episodes):
-            if epi%100==0:
+            if epi % 100 == 0:
                 print(f"{epi}\n")
             obs, acts, rtgs, log_probs = self.roll_out()
             advantages = self.advantage_estimate(obs, rtgs)
@@ -153,17 +170,17 @@ class PPO:
 
             step = obs.size(0)
             inds = np.arange(step)
-            minibatch_size = step//args.num_minibatches
+            minibatch_size = step // args.num_minibatches
             for upd in range(args.num_updates):
                 sofar_upd = epi * args.num_updates + upd
 
-                #learning rate annealing which doesn't work well but it is good with mini-batch
+                # learning rate annealing which doesn't work well but it is good with mini-batch
                 frac = (sofar_upd - 1.0) / total_upd
-                new_lr = args.learning_rate*(1.0-frac)
+                new_lr = args.learning_rate * (1.0 - frac)
                 self.actor_optim.param_groups[0]["lr"] = new_lr
                 self.critic_optim.param_groups[0]["lr"] = new_lr
 
-                #mini-batch works significantly well
+                # mini-batch
                 np.random.shuffle(inds)
                 for start in range(0, step, minibatch_size):
                     end = start + minibatch_size
@@ -197,20 +214,25 @@ if __name__ == "__main__":
     args = parse_args()
     now = datetime.datetime.now()
     run_name = f"{args.gym_id}__{args.exp_name}__{args.seed}__{now.strftime('%Y-%m-%d--%H-%M')}"
-    writer = SummaryWriter(f"runs/{run_name}")
-    writer.add_text(
-        "hyperparameters",
-        "|param|value|\n|-|-|\n%s" % ("\n".join([f"|{key}|{value}|" for key, value in vars(args).items()])),
-    )
+    if args.track:
+        import wandb
 
+        wandb.init(
+            project=args.wandb_project_name,
+            entity=args.wandb_entity,
+            sync_tensorboard=True,
+            config=vars(args),
+            name=run_name,
+            monitor_gym=True,
+            save_code=True,
+        )
+    writer = SummaryWriter(f"runs/{run_name}")
     device = torch.device("cuda" if torch.cuda.is_available() and args.cuda else "cpu")
     env = gym.make(args.gym_id, render_mode="rgb_array")
     env = RecordEpisodeStatistics(env)
     if args.render:
-        env = gym.wrappers.RecordVideo(env, "./video", episode_trigger = lambda x: x % 100 == 0)
+        env = gym.wrappers.RecordVideo(env, "./video", episode_trigger=lambda x: x % 100 == 0)
     agent = Agent(env)
     ppo = PPO(env)
     ppo.train()
     env.close()
-
-    
