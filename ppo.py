@@ -33,7 +33,7 @@ def parse_args():
         help="if toggled, cuda will be enabled by default",
     )
     parser.add_argument("--seed", type=int, default=1)
-    parser.add_argument("--num-episodes", type=int, default=500, help="the number of episodes to run")
+    parser.add_argument("--num-episodes", type=int, default=1000, help="the number of episodes to run")
     parser.add_argument(
         "--num-steps", type=int, default=128, help="the number of steps to run in each environment per policy rollout"
     )
@@ -61,6 +61,9 @@ def parse_args():
         help="if toggled, render the environment",
     )
     parser.add_argument("--num-minibatches", type=int, default=6)
+    parser.add_argument("--entropy-coeff", type=float, default=0.01)
+    parser.add_argument("--target-kl", type=float, default=0.02)
+    parser.add_argument("--lamda", type=float, default=0.95)
     args = parser.parse_args()
     return args
 
@@ -120,29 +123,36 @@ class PPO:
         lens = []
         rtgs = []
         ep_rews = []
+        ep_vals = []
+        ep_dones = []
+        t = 0
 
         observation = self.env.reset()[0]
         done = False
         for _ in range(args.num_steps):
+            t += 1
             obs.append(observation)
             action, log_prob = agent.get_action_and_prob(observation)
             observation, reward, done, truncated, info = env.step(action)
-            acts.append(action)
+
             log_probs.append(log_prob)
+            ep_dones.append(done)
+            ob_val = np.array(observation).reshape(-1, 4)
+            ob_val = torch.FloatTensor(ob_val)
+            val = agent.get_value(ob_val)
+
+            acts.append(action)
             ep_rews.append(reward)
+            ep_vals.append(float(val))
             if done:
                 break
+
         obs = np.array(obs).reshape(-1, 4)
         log_probs = torch.FloatTensor(log_probs)
         obs = torch.FloatTensor(obs)
         acts = torch.FloatTensor(np.array(acts))
         rtgs = torch.FloatTensor(self.to_go(ep_rews))
-        return (
-            obs,
-            acts,
-            rtgs,
-            log_probs,
-        )
+        return (obs, acts, rtgs, log_probs, ep_rews, ep_dones, ep_vals)
 
     def to_go(self, rewards):
         rtgs = []
@@ -159,13 +169,30 @@ class PPO:
         advantage = (advantages - advantages.mean()) / (advantages.std() - 1e-10)
         return advantages
 
+    def calclulate_gae(self, rews, values, dones):
+        batch_advantages = []
+        advantages = []
+        last_advantage = 0
+
+        for t in reversed(range(len(rews))):
+            if t + 1 < len(rews):
+                delta = rews[t] + args.gamma * values[t + 1] * (1 - dones[t + 1]) - values[t]
+            else:
+                delta = rews[t] - values[t]
+            advantage = delta + args.gamma * args.lamda * last_advantage * (1 - dones[t])
+            last_advantage = advantage
+            advantages.insert(0, advantage)
+        batch_advantages.extend(advantages)
+        return torch.tensor(batch_advantages, dtype=torch.float32)
+
     def train(self):
         total_upd = args.num_episodes * args.num_updates
         for epi in range(args.num_episodes):
             if epi % 100 == 0:
                 print(f"{epi}\n")
-            obs, acts, rtgs, log_probs = self.roll_out()
-            advantages = self.advantage_estimate(obs, rtgs)
+            obs, acts, rtgs, log_probs, rews, dones, vals = self.roll_out()
+            advantages = self.calclulate_gae(rews, vals, dones)
+            # advantages = self.advantage_estimate(obs, rtgs)
             advantages = advantages.detach()
 
             step = obs.size(0)
@@ -190,20 +217,28 @@ class PPO:
                     mini_log_probs = log_probs[idx]
                     mini_advantages = advantages[idx]
                     mini_rtgs = rtgs[idx]
+
                     V, curr_log_probs, entropy = agent.evaluate(mini_obs, mini_acts)
+                    entropy = entropy.mean()
+                    log_ratios = curr_log_probs - mini_log_probs
                     pi_ratios = torch.exp(curr_log_probs - mini_log_probs)
+                    approx_kl = ((1 - pi_ratios) - log_ratios).mean()
                     surrogate1 = pi_ratios * mini_advantages
                     surrogate2 = torch.clamp(pi_ratios, 1 - args.clip, 1 + args.clip) * mini_advantages
-                    actor_loss = (-torch.min(surrogate1, surrogate2)).mean()
+                    actor_loss = (-torch.min(surrogate1, surrogate2)).mean() - args.entropy_coeff * entropy
                     self.actor_optim.zero_grad()
-                    actor_loss.backward()
+                    actor_loss.backward(retain_graph=True)
+                    nn.utils.clip_grad_norm_(agent.actor.parameters(), 0.5)
                     self.actor_optim.step()
 
                     loss = nn.MSELoss()
                     critic_loss = loss(V, mini_rtgs)
                     self.critic_optim.zero_grad()
                     critic_loss.backward()
+                    nn.utils.clip_grad_norm_(agent.critic.parameters(), 0.5)
                     self.critic_optim.step()
+                    if approx_kl > args.target_kl:
+                        break
 
                 writer.add_scalar("loss-actor", actor_loss, sofar_upd)
                 writer.add_scalar("loss-critic", critic_loss, sofar_upd)
