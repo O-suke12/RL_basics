@@ -7,6 +7,7 @@ from distutils.util import strtobool
 
 import gymnasium as gym
 import numpy as np
+import pytz
 import torch
 import torch.nn as nn
 from gym.wrappers import RecordEpisodeStatistics
@@ -247,7 +248,9 @@ class PPO:
 
 if __name__ == "__main__":
     args = parse_args()
-    now = datetime.datetime.now()
+    utc = pytz.utc
+    japan_tz = pytz.timezone("Japan")
+    now = datetime.datetime.now(japan_tz)
     run_name = f"{args.gym_id}__{args.exp_name}__{args.seed}__{now.strftime('%Y-%m-%d--%H-%M')}"
     if args.track:
         import wandb
