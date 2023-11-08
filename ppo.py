@@ -21,10 +21,23 @@ is_legacy_gym = version.parse(gym.__version__) < version.parse("0.26.0")
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--exp-name", type=str, default=os.path.basename(__file__).rstrip(".py"), help="the name of this experiment"
+        "--exp-name",
+        type=str,
+        default=os.path.basename(__file__).rstrip(".py"),
+        help="the name of this experiment",
     )
-    parser.add_argument("--gym-id", type=str, default="CartPole-v1", help="the id of the gym environment")
-    parser.add_argument("--learning-rate", type=float, default=2.5e-4, help="the learning rate of the optimizer")
+    parser.add_argument(
+        "--gym-id",
+        type=str,
+        default="LunarLander-v2",
+        help="the id of the gym environment",
+    )
+    parser.add_argument(
+        "--learning-rate",
+        type=float,
+        default=2.5e-4,
+        help="the learning rate of the optimizer",
+    )
     parser.add_argument(
         "--cuda",
         type=lambda x: bool(strtobool(x)),
@@ -34,17 +47,39 @@ def parse_args():
         help="if toggled, cuda will be enabled by default",
     )
     parser.add_argument("--seed", type=int, default=1)
-    parser.add_argument("--num-episodes", type=int, default=1000, help="the number of episodes to run")
     parser.add_argument(
-        "--num-steps", type=int, default=128, help="the number of steps to run in each environment per policy rollout"
+        "--num-episodes", type=int, default=2000, help="the number of episodes to run"
     )
-    parser.add_argument("--gamma", type=float, default=0.99, help="the discount factor gamma")
-    parser.add_argument("--num-updates", type=int, default=4, help="the number of update in each episode")
-    parser.add_argument("--clip", type=float, default=0.2, help="the surrogate clipping coefficient")
     parser.add_argument(
-        "--wandb-project-name", type=str, default="ppo-implementation-details", help="the wandb's project name"
+        "--num-steps",
+        type=int,
+        default=128,
+        help="the number of steps to run in each environment per policy rollout",
     )
-    parser.add_argument("--wandb-entity", type=str, default=None, help="the entity (team) of wandb's project")
+    parser.add_argument(
+        "--gamma", type=float, default=0.99, help="the discount factor gamma"
+    )
+    parser.add_argument(
+        "--num-updates",
+        type=int,
+        default=4,
+        help="the number of update in each episode",
+    )
+    parser.add_argument(
+        "--clip", type=float, default=0.2, help="the surrogate clipping coefficient"
+    )
+    parser.add_argument(
+        "--wandb-project-name",
+        type=str,
+        default="ppo-implementation-details",
+        help="the wandb's project name",
+    )
+    parser.add_argument(
+        "--wandb-entity",
+        type=str,
+        default=None,
+        help="the entity (team) of wandb's project",
+    )
     parser.add_argument(
         "--track",
         type=lambda x: bool(strtobool(x)),
@@ -114,8 +149,12 @@ class PPO:
     def __init__(self, env):
         super().__init__()
         self.env = env
-        self.actor_optim = torch.optim.Adam(agent.actor.parameters(), lr=args.learning_rate)
-        self.critic_optim = torch.optim.Adam(agent.critic.parameters(), lr=args.learning_rate)
+        self.actor_optim = torch.optim.Adam(
+            agent.actor.parameters(), lr=args.learning_rate
+        )
+        self.critic_optim = torch.optim.Adam(
+            agent.critic.parameters(), lr=args.learning_rate
+        )
 
     def roll_out(self):
         obs = []
@@ -138,8 +177,8 @@ class PPO:
 
             log_probs.append(log_prob)
             ep_dones.append(done)
-            ob_val = np.array(observation).reshape(-1, 4)
-            ob_val = torch.FloatTensor(ob_val)
+            # ob_val = np.array(observation).reshape(-1, env.observation_space.shape[0])
+            ob_val = torch.FloatTensor(observation)
             val = agent.get_value(ob_val)
 
             acts.append(action)
@@ -148,7 +187,7 @@ class PPO:
             if done:
                 break
 
-        obs = np.array(obs).reshape(-1, 4)
+        obs = np.array(obs).reshape(-1, env.observation_space.shape[0])
         log_probs = torch.FloatTensor(log_probs)
         obs = torch.FloatTensor(obs)
         acts = torch.FloatTensor(np.array(acts))
@@ -177,10 +216,16 @@ class PPO:
 
         for t in reversed(range(len(rews))):
             if t + 1 < len(rews):
-                delta = rews[t] + args.gamma * values[t + 1] * (1 - dones[t + 1]) - values[t]
+                delta = (
+                    rews[t]
+                    + args.gamma * values[t + 1] * (1 - dones[t + 1])
+                    - values[t]
+                )
             else:
                 delta = rews[t] - values[t]
-            advantage = delta + args.gamma * args.lamda * last_advantage * (1 - dones[t])
+            advantage = delta + args.gamma * args.lamda * last_advantage * (
+                1 - dones[t]
+            )
             last_advantage = advantage
             advantages.insert(0, advantage)
         batch_advantages.extend(advantages)
@@ -192,8 +237,8 @@ class PPO:
             if epi % 100 == 0:
                 print(f"{epi}\n")
             obs, acts, rtgs, log_probs, rews, dones, vals = self.roll_out()
-            advantages = self.calclulate_gae(rews, vals, dones)
-            # advantages = self.advantage_estimate(obs, rtgs)
+            # advantages = self.calclulate_gae(rews, vals, dones)
+            advantages = self.advantage_estimate(obs, rtgs)
             advantages = advantages.detach()
 
             step = obs.size(0)
@@ -225,8 +270,13 @@ class PPO:
                     pi_ratios = torch.exp(curr_log_probs - mini_log_probs)
                     approx_kl = ((1 - pi_ratios) - log_ratios).mean()
                     surrogate1 = pi_ratios * mini_advantages
-                    surrogate2 = torch.clamp(pi_ratios, 1 - args.clip, 1 + args.clip) * mini_advantages
-                    actor_loss = (-torch.min(surrogate1, surrogate2)).mean() - args.entropy_coeff * entropy
+                    surrogate2 = (
+                        torch.clamp(pi_ratios, 1 - args.clip, 1 + args.clip)
+                        * mini_advantages
+                    )
+                    actor_loss = (
+                        -torch.min(surrogate1, surrogate2)
+                    ).mean() - args.entropy_coeff * entropy
                     self.actor_optim.zero_grad()
                     actor_loss.backward(retain_graph=True)
                     nn.utils.clip_grad_norm_(agent.actor.parameters(), 0.5)
@@ -248,10 +298,12 @@ class PPO:
 
 if __name__ == "__main__":
     args = parse_args()
+    if args.gym_id in os.listdir("./runs"):
+        os.mkdir("./runs/" + args.gym_id)
     utc = pytz.utc
     japan_tz = pytz.timezone("Japan")
     now = datetime.datetime.now(japan_tz)
-    run_name = f"{args.gym_id}__{args.exp_name}__{args.seed}__{now.strftime('%Y-%m-%d--%H-%M')}"
+    run_name = f"{args.exp_name}__{now.strftime('%Y-%m-%d--%H-%M')}"
     if args.track:
         import wandb
 
@@ -264,12 +316,14 @@ if __name__ == "__main__":
             monitor_gym=True,
             save_code=True,
         )
-    writer = SummaryWriter(f"runs/{run_name}")
+    writer = SummaryWriter(f"runs/{args.gym_id}/{run_name}")
     device = torch.device("cuda" if torch.cuda.is_available() and args.cuda else "cpu")
     env = gym.make(args.gym_id, render_mode="rgb_array")
     env = RecordEpisodeStatistics(env)
     if args.render:
-        env = gym.wrappers.RecordVideo(env, "./video", episode_trigger=lambda x: x % 100 == 0)
+        env = gym.wrappers.RecordVideo(
+            env, "./video", episode_trigger=lambda x: x % 100 == 0
+        )
     agent = Agent(env)
     ppo = PPO(env)
     ppo.train()
