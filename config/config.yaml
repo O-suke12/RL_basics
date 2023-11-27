@@ -1,0 +1,19 @@
+gym_id: "LunarLander-v2"
+exp_name: "ppo"
+project_name: "ppo"
+cuda: False
+learning_rate: 2.5e-4
+seed: 1
+numepisodes: 2000
+numsteps: 128
+gamma: 0.99
+numupdates: 4
+cliprange: 0.2
+track: True
+render: False
+num_minibatches: 6
+entropy_coeff: 0.01
+target_kl: 0.02
+lamda: 0.95
+
+
